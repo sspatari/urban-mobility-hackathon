@@ -36,14 +36,11 @@ class ConfigService {
       database: this.getValue('POSTGRES_DATABASE'),
 
       entities: ['**/*.entity{.ts,.js}'],
-      synchronize: true,
     };
   }
 }
 
-export const configService: ConfigService = new ConfigService(
-  process.env,
-).ensureValues([
+export const configService: ConfigService = new ConfigService(process.env).ensureValues([
   'POSTGRES_HOST',
   'POSTGRES_PORT',
   'POSTGRES_USER',
