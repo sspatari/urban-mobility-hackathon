@@ -7,6 +7,6 @@
     "package.json",
     "nodemon-debug.json"
   ],
-  "ext": "js,ts",
+  "ext": "ts",
   "exec": "npm run start:dev"
 }
