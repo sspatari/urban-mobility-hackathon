@@ -1,1 +1,1 @@
-export * from './movement.service';
+export * from './computing.service';

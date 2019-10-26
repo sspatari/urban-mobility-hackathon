@@ -22,7 +22,7 @@
     "strictNullChecks": true,
     "outDir": "dist",
     "baseUrl": "src",
-    "lib": ["es2017"]
+    "lib": ["es2019"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

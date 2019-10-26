@@ -1,1 +1,1 @@
-export * from './movement.controller';
+export * from './computing.controller';

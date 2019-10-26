@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { MovementGeom } from '../model/movement-geom.model';
 
 @Entity('movement')
 export class Movement {
@@ -8,8 +9,8 @@ export class Movement {
   @Column({ length: 20 })
   agent: string;
 
-  @Column()
-  geom: string;
+  @Column({ type: 'geometry' })
+  geom: MovementGeom;
 
   @Column()
   length: number;
