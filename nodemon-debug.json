@@ -1,0 +1,5 @@
+{
+    "watch": ["lib", "src", ".env", "nodemon-debug.json", "tsconfig.json"],
+    "ext": "js,ts",
+    "exec": "node --inspect -r ts-node/register -r dotenv-safe/config src/server.ts dotenv_config_allowEmptyValues=true"
+}

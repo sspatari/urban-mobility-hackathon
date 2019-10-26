@@ -1,0 +1,12 @@
+{
+  "watch": [
+    "src",
+    ".env",
+    "nodemon.json",
+    "tsconfig.json",
+    "package.json",
+    "nodemon-debug.json"
+  ],
+  "ext": "js,ts",
+  "exec": "npm run start:dev"
+}
