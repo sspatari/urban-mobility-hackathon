@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import inside from 'point-in-polygon';
+import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Movement, Region } from '../entity';
 import { DistrictSimplifiedData, Point } from '../model';
 import { MovementRepository, RegionRepository } from '../repository';
@@ -25,13 +26,27 @@ export class ComputingService {
       });
     }
 
-    const movement: Movement | undefined = await this.movementRepository.findOne({ id: 1 });
+    const rangeDateTimeMin: Date = new Date('2019-06-03T00:00:00-0000');
+    const rangeDateTimeMax: Date = new Date('2019-06-03T23:59:59-0000');
 
-    if (!movement) throw new NotFoundException();
+    const movements: Movement[] = await this.movementRepository.find({
+      where: {
+        starttime: MoreThanOrEqual(rangeDateTimeMin),
+        endtime: LessThanOrEqual(rangeDateTimeMax),
+      },
+      order: {
+        starttime: 'ASC',
+      },
+      take: 10000,
+    });
 
-    const timeDiff: number = Math.abs(movement.endtime.getTime() - movement.starttime.getTime()); // miliseconds
+    console.dir(movements[9999].starttime);
 
-    console.log(timeDiff, movement.id, movement.agent);
+    if (!movements.length) throw new NotFoundException();
+
+    // const timeDiff: number = Math.abs(movement.endtime.getTime() - movement.starttime.getTime()); // miliseconds
+
+    // console.log(timeDiff, movement.id, movement.agent);
 
     // if (movement) {
     //   console.log(movement.geom.coordinates[0][0], movement.geom.coordinates[0][1]);
