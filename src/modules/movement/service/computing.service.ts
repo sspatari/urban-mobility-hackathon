@@ -8,10 +8,17 @@ import { getHourString } from '../utils';
 
 @Injectable()
 export class ComputingService {
+  private districtsObj:
+    | {
+        districts: DistrictSimplifiedData[];
+      }
+    | undefined = undefined;
+
   constructor(
     private readonly movementRepository: MovementRepository,
     private readonly regionRepository: RegionRepository,
   ) {}
+
   async getDistrictMovements(): Promise<any> {
     const result: {
       [key: string]: number[];
@@ -25,7 +32,7 @@ export class ComputingService {
     }
 
     const hourlyMovements: {
-      [key: string]: Movement[];
+      [key: number]: Movement[];
     } = {};
 
     let counter = 0;
@@ -95,7 +102,7 @@ export class ComputingService {
         order: {
           starttime: 'ASC',
         },
-        take: 100,
+        take: 200,
       })
       .then((movements: Movement[]) => {
         const movements2: Movement[] = movements.map((item: Movement) => {
@@ -123,13 +130,15 @@ export class ComputingService {
       districtsObj.districts.push(new DistrictSimplifiedData(region.name, region.geom.coordinates.flat(2)));
     }
 
+    this.districtsObj = districtsObj;
+
     return districtsObj;
   }
 
   async getDistrictByPoint(point: Point): Promise<{ title: string }> {
     const districtsObj: {
       districts: DistrictSimplifiedData[];
-    } = await this.getSimplifiedDistricts();
+    } = this.districtsObj || (await this.getSimplifiedDistricts());
 
     for (const district of districtsObj.districts) {
       if (inside([point.x, point.y], district.polygon)) {
