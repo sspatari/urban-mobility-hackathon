@@ -22,4 +22,9 @@ export class ComputingController {
   async getDistrictByPoint(@Query() point: Point): Promise<{ title: string }> {
     return this.computingService.getDistrictByPoint(point);
   }
+
+  @Get('/hitmap')
+  async getHitmap(): Promise<any> {
+    return this.computingService.getHitmap(point);
+  }
 }

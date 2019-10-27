@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import inside from 'point-in-polygon';
 import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Movement, Region } from '../entity';
 import { DistrictSimplifiedData, Point } from '../model';
 import { MovementRepository, RegionRepository } from '../repository';
+import { getHourString } from '../utils';
 
 @Injectable()
 export class ComputingService {
@@ -12,48 +13,98 @@ export class ComputingService {
     private readonly regionRepository: RegionRepository,
   ) {}
   async getDistrictMovements(): Promise<any> {
-    const result: any = {
-      district: [],
-    };
+    const result: {
+      [key: string]: number[];
+    } = {};
 
     const regions: Region[] = await this.regionRepository.find();
     const region_names: string[] = regions.map((region: Region) => region.name);
 
     for (const region_name of region_names) {
-      result.district.push({
-        title: region_name,
-        avg_speed: [],
-      });
+      result[region_name] = [];
     }
 
-    const rangeDateTimeMin: Date = new Date('2019-06-03T00:00:00-0000');
-    const rangeDateTimeMax: Date = new Date('2019-06-03T23:59:59-0000');
+    const hourlyMovements: {
+      [key: string]: Movement[];
+    } = {};
 
-    const movements: Movement[] = await this.movementRepository.find({
-      where: {
-        starttime: MoreThanOrEqual(rangeDateTimeMin),
-        endtime: LessThanOrEqual(rangeDateTimeMax),
-      },
-      order: {
-        starttime: 'ASC',
-      },
-      take: 10000,
-    });
+    let counter = 0;
 
-    console.dir(movements[9999].starttime);
+    for (let i: number = 0; i <= 23; i++) {
+      hourlyMovements[i] = await this.getMovementsInRange(i);
 
-    if (!movements.length) throw new NotFoundException();
+      console.log('Calculating for hour: ', i);
 
-    // const timeDiff: number = Math.abs(movement.endtime.getTime() - movement.starttime.getTime()); // miliseconds
+      const avgDistrictSpeed: {
+        [key: string]: number[];
+      } = {};
 
-    // console.log(timeDiff, movement.id, movement.agent);
+      for (const region_name of region_names) {
+        avgDistrictSpeed[region_name] = [];
+      }
 
-    // if (movement) {
-    //   console.log(movement.geom.coordinates[0][0], movement.geom.coordinates[0][1]);
-    // }
-    // return this.movementRepository.findOne({ id: 1 });
+      for (let j: number = 0; j < hourlyMovements[i].length; ++j) {
+        const point: Point = {
+          x: hourlyMovements[i][j].geom.coordinates[0][0],
+          y: hourlyMovements[i][j].geom.coordinates[0][1],
+        };
+        let time = hourlyMovements[i][j].endtime.getTime() - hourlyMovements[i][j].starttime.getTime();
+        time = time / 3600 / 1000;
+        if (time <= 1) {
+          const district = (await this.getDistrictByPoint(point)).title;
+          // if (counter !== i) {
+          //   console.log('****: ', i);
+          //   console.log(hourlyMovements[i][j]);
+          // }
+          if (district !== '') {
+            const avgUserSpeed: number = hourlyMovements[i][j].length / time;
+            avgDistrictSpeed[district].push(avgUserSpeed);
+          }
+        }
+      }
+      const avgSpeedDistrict: {
+        [key: string]: number;
+      } = {};
+      for (const region_name of region_names) {
+        avgSpeedDistrict[region_name] =
+          avgDistrictSpeed[region_name].reduce((acum: number, element: number) => acum + element, 0) /
+          avgDistrictSpeed[region_name].length;
+      }
+      for (const region_name of region_names) {
+        result[region_name].push(avgSpeedDistrict[region_name]);
+      }
+      counter = counter + 1;
+    }
 
     return result;
+  }
+
+  async getMovementsInRange(hour: number): Promise<Movement[]> {
+    const hourStr: string = getHourString(hour);
+    let startDate = new Date(`2019-06-03T${hourStr}:00:00-0000`);
+    let endDate = new Date(`2019-06-03T${hourStr}:59:59-0000`);
+    const rangeDateTimeMin: Date = new Date(startDate.getTime() - 3 * 3600 * 1000);
+    const rangeDateTimeMax: Date = new Date(endDate.getTime() - 3 * 3600 * 1000);
+
+    return this.movementRepository
+      .find({
+        where: {
+          starttime: MoreThanOrEqual(rangeDateTimeMin),
+          endtime: LessThanOrEqual(rangeDateTimeMax),
+        },
+        order: {
+          starttime: 'ASC',
+        },
+        take: 100,
+      })
+      .then((movements: Movement[]) => {
+        const movements2: Movement[] = movements.map((item: Movement) => {
+          item.starttime = new Date(item.starttime.getTime() + 3 * 3600 * 1000);
+          item.endtime = new Date(item.endtime.getTime() + 3 * 3600 * 1000);
+          return item;
+        });
+        return movements2;
+      });
   }
 
   async getSimplifiedDistricts(): Promise<{
@@ -86,6 +137,16 @@ export class ComputingService {
       }
     }
 
-    throw new NotFoundException();
+    return { title: '' };
+  }
+
+  async getHitmap(): Promise<any> {
+    const hourlyMovements: {
+      [key: string]: Movement[];
+    } = {};
+
+    for (let i: number = 0; i <= 23; i++) {
+      hourlyMovements[i] = await this.getMovementsInRange(i);
+    }
   }
 }
