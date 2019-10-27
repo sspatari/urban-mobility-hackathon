@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import inside from 'point-in-polygon';
 import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Movement, Region } from '../entity';
-import { DistrictSimplifiedData, Point } from '../model';
+import { Coord, DistrictSimplifiedData, Point } from '../model';
 import { MovementRepository, RegionRepository } from '../repository';
 import { getHourString } from '../utils';
 
@@ -141,12 +141,27 @@ export class ComputingService {
   }
 
   async getHitmap(): Promise<any> {
-    const hourlyMovements: {
-      [key: string]: Movement[];
-    } = {};
+    const result: {
+      hitmap: {
+        hour: number;
+        points: Coord[];
+      }[];
+    } = {
+      hitmap: [],
+    };
 
     for (let i: number = 0; i <= 23; i++) {
-      hourlyMovements[i] = await this.getMovementsInRange(i);
+      const movementsByHour: Movement[] = await this.getMovementsInRange(i);
+
+      result.hitmap.push({
+        hour: i,
+        points: [],
+      });
+      for (const movement of movementsByHour) {
+        const point: Coord = [movement.geom.coordinates[0][0], movement.geom.coordinates[0][1]];
+        result.hitmap[result.hitmap.length - 1].points.push(point);
+      }
     }
+    return result;
   }
 }

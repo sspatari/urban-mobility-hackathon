@@ -25,6 +25,6 @@ export class ComputingController {
 
   @Get('/hitmap')
   async getHitmap(): Promise<any> {
-    return this.computingService.getHitmap(point);
+    return this.computingService.getHitmap();
   }
 }
